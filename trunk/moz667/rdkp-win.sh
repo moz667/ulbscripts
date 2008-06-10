@@ -1,3 +1,5 @@
+#!/bin/sh
+
  # Crea una conexion por terminal services y crea una carpeta compartida en 
  # ~/share-rdkp
  

@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # $1, fichero video a pasar
 # $2, imagen de marca de agua
 # $3, fichero video resultante
