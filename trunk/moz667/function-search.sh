@@ -5,3 +5,4 @@
 
 FILE=`grep "function $1" * -l -R`
 nano -w $FILE
+
