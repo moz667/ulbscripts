@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # $1 Patron que debe ir entre comillas dobles " y admite los mismos patrones que ls
 # ejemplo : "/var/*.txt /tmp/dos* *.txt *.cfg"
 # esto convertiria de formato unix a formato dos los archivos en /var/ terminados en .txt
