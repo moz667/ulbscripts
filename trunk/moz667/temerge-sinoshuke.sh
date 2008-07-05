@@ -1,4 +1,6 @@
 #!/bin/bash
+# cogido de : http://gentoo-wiki.com/TIP_Speeding_up_portage_with_tmpfs
+# 
 MEMSIZE=1500M
 mounted=false
  
