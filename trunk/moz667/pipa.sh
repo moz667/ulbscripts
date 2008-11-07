@@ -1,3 +1,6 @@
+# PIPA, Peta Inalambricas Para Atheros, pretende algun dia ser un script para ayudarme 
+# a testear la seguridad de las redes inalambricas de mis vecinos :P 
+
 DEBUG=1
 DEBUG_WIFI=0
 
