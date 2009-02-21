@@ -1,12 +1,75 @@
 # !/bin/bash
+# Host 192.168.84.1 appears to be up.
+# Host 192.168.84.254 appears to be up.
 
-if [ "$1" != "" ]
+if [ "$1" == "help" ]
+then
+	echo "pipa.sh [comando]"
+	echo "Si lo llamas sin comando escaneara y generara la config para los distintos "
+	echo "gentoo-config : Genera la configuracion para gentoo, tienes que ejecutarlo desde una carpeta que ya hayas conseguido la password del ap, "
+	# TODO : TERMINAR
+	exit
+fi
+
+if [ "$1" == "gentoo-config" ]
+then
+	source variables.sh
+	PASSWORD=`cat password.txt | grep KEY | sed -e "s/.*\[ //g" -e "s/ \].*//g"`
+	echo "essid_ath0=\"$ESSID\""
+	echo "key_$ESSID=\"$PASSWORD\""
+	echo "config_ath0=( \"dhcp\" )"
+	exit
+fi
+
+if [ "$1" == "reset-iface" ]
 then
 	airmon-ng stop ath1
 	airmon-ng stop ath0
 	wlanconfig ath create wlandev wifi0 wlanmode sta
 	iwconfig ath0 channel 1
 	ifconfig ath0 up
+	exit
+fi
+
+if [ "$1" == "test-injection" ]
+then
+	airmon-ng stop ath1
+	airmon-ng stop ath0
+	wlanconfig ath create wlandev wifi0 wlanmode sta
+	iwconfig ath0 channel 1
+	ifconfig ath0 up
+	airmon-ng start wifi0 1
+	airmon-ng stop ath0
+	
+	CHANNEL_LIST=`iwlist ath1 channel | grep "Channel.*:" | sed -e "s/.*Channel //g" -e "s/ .*//g" -e "s/^0//g"`
+	
+	for CHANNEL_AUX in $CHANNEL_LIST
+	do
+		# hay alguna veces (con aireplay lo he comprobado) que se queda pillado en un canal
+		# y que no cambia con iwconfig channel a no ser que hagas down antes de la interfaz
+		ifconfig ath1 down; iwconfig ath1 channel $CHANNEL_AUX; ifconfig ath1 up;
+		
+		echo "PROBANDO CANAL : $CHANNEL_AUX"
+		echo "===================================================================="
+		aireplay-ng -9 ath1
+	done
+	exit
+fi
+
+if [ "$1" == "search-ip" ]
+then
+	# TODO: Hacer el nmap desde un bucle para poder hacer un prgreesbar o algo semejante.
+	echo "## Probando con el rango 192.168.0.0 - 192.168.255.255, ignora el up 192.168.0.254"
+	echo "## en cuantro encuentres una ip viva (up) puedes cancelar este proceso con Ctrl+C"
+	echo "##"
+	ifconfig ath0 192.168.0.254 netmask 255.255.0.0
+	nmap -v -sP 192.168.0.0/16 |  grep " appears to be up"
+	echo "## Probando con el rango 10.0.0.0 - 10.255.255.255, ignora el up 10.0.0.254"
+	echo "## en cuantro encuentres una ip arriba (up) puedes cancelar este proceso con Ctrl+C"
+	echo "##"
+	ifconfig ath0 10.0.0.254 netmask 255.0.0.0
+	nmap -v -sP 10.0.0.0/8 |  grep -v " appears to be up"
+	exit
 fi
 
 MAC_ADDRESS=`ifconfig ath0 | grep HWaddr | sed -e "s/.*HWaddr //g" -e "s/ .*//g"`
@@ -19,7 +82,7 @@ for CHANNEL_AUX in $CHANNEL_LIST
 do
 	# hay alguna veces (con aireplay lo he comprobado) que se queda pillado en un canal
 	# y que no cambia con iwconfig channel a no ser que hagas down antes de la interfaz
-	ifconfig ath1 down; iwconfig ath0 channel $CHANNEL_AUX; ifconfig ath1 up;
+	ifconfig ath0 down; iwconfig ath0 channel $CHANNEL_AUX; ifconfig ath0 up;
 
 	echo -n "[chn $CHANNEL_AUX]"
 	
@@ -89,7 +152,7 @@ do
 		echo "# N3) Cambiar el canal de ath1, Hay veces (yo lo he visto al usar airmon-ng -9 ath1) que se queda en otro canal distinto al que configuramos inicialmente ath1 en el modo monitor, para cambiarlo ejecutar : " >> "$DIRWIFI/ayuda.txt"
 		echo "ifconfig ath1 down; iwconfig ath1 channel $CHANNEL; ifconfig ath1 up;" >> "$DIRWIFI/ayuda.txt"
 		echo "# N4) Siempre es conveniente saber a que aps podemos atacar y cuales estan mas cerca, la mejor forma es ejecutar : " >> "$DIRWIFI/ayuda.txt"
-		echo "aireplay-ng -9 ath1" >> "$DIRWIFI/ayuda.txt"
+		echo "aireplay-ng -9 -a $BSSID ath1" >> "$DIRWIFI/ayuda.txt"
 		echo "# Si no nos diera un buen resultado podemos buscar otro ap cambiando primero el canal de la ath1 (ver punto N3), esto no es necesario, pero, facilita encontrar aps" >> "$DIRWIFI/ayuda.txt"
 		echo "# N999) Para una version abreviada de este documento sin los comentarios ejecutar :" >> "$DIRWIFI/ayuda.txt"
 		echo "grep -v \"#\" ayuda.txt" >> "$DIRWIFI/ayuda.txt"
