@@ -9,31 +9,35 @@ then
 	ifconfig ath0 up
 fi
 
-
 MAC_ADDRESS=`ifconfig ath0 | grep HWaddr | sed -e "s/.*HWaddr //g" -e "s/ .*//g"`
 
 CHANNEL_LIST=`iwlist ath0 channel | grep "Channel.*:" | sed -e "s/.*Channel //g" -e "s/ .*//g" -e "s/^0//g"`
 
+echo -n "Escaneando y guardando config :"
+
 for CHANNEL_AUX in $CHANNEL_LIST
 do
-	iwconfig ath0 channel $CHANNEL_AUX
+	# hay alguna veces (con aireplay lo he comprobado) que se queda pillado en un canal
+	# y que no cambia con iwconfig channel a no ser que hagas down antes de la interfaz
+	ifconfig ath1 down; iwconfig ath0 channel $CHANNEL_AUX; ifconfig ath1 up;
 
-	echo "Escaneando canal $CHANNEL_AUX"
+	echo -n "[chn $CHANNEL_AUX]"
 	
 	IWLIST_DATA=`iwlist ath0 scan | grep "Address\|ESSID\|Channel\|WPA\|Mode\|Encryption" | tr "\n" " " | sed -e "s/Cell/\nCell/g" | grep "Mode:Master" | grep "Encryption key:on" | sed -e "s/Mode:Master//g" -e "s/Encryption key:on//g" | sed -e "s/Frequency:2.....GHz//p" | sort | uniq | sed -e "s/ESSID/ ESSID/g" | sed -e "s/Cell...//g" | grep -v WPA | sed -e "s/(/ /g" -e "s/)/ /g" -e "s/Channel/Channel:/g" | sed -e "s/^ - //g" -e "s/ *ESSID/ ESSID/g" -e "s/\" *Channel: /\" Channel:/g" -e "s/Address: /Address:/g"`
 	IWLIST_DATA=`echo $IWLIST_DATA | sed -e "s/Address/\nAddress/g"`
 	IWLIST_DATA=`echo $IWLIST_DATA | sed -e "s/ /#/g" | sed -e "s/Address/\nAddress/g"`
 
-	echo -n " aps encontrados :"
-
 	for ESSID_CFG in $IWLIST_DATA
 	do
 		ESSID_CFG=`echo $ESSID_CFG | sed -e "s/#/ /g"`
+		
 		BSSID=`echo $ESSID_CFG | sed -e "s/Address://g" -e "s/ ESSID.*//g"`
 		ESSID=`echo $ESSID_CFG | sed -e "s/.*ESSID:\"//g" -e "s/\".*//g"`
 		CHANNEL=`echo $ESSID_CFG | sed -e "s/.*Channel://g" -e "s/ //g"`
-		
-		echo -n " $ESSID"
+
+		IWLIST_DATA_AUX="$IWLIST_DATA_AUX\n$CHANNEL [$ESSID] $BSSID"
+
+		echo -n "."
 
 		DIRWIFI=`echo "$ESSID-$BSSID" | sed -e "s/:/-/g" -e "s/ /\\ /g"`
 		mkdir -p "$DIRWIFI"
@@ -90,8 +94,8 @@ do
 		echo "# N999) Para una version abreviada de este documento sin los comentarios ejecutar :" >> "$DIRWIFI/ayuda.txt"
 		echo "grep -v \"#\" ayuda.txt" >> "$DIRWIFI/ayuda.txt"
 	done
-	echo -e "\n"
 done
+echo -e "\n"
 
-# echo "$IWLIST_DATA"
+echo -e "$IWLIST_DATA_AUX" | sort | uniq
 
