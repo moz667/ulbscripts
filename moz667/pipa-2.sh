@@ -20,7 +20,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
+#
+# Actualizaciones en : http://code.google.com/p/ulbscripts/source/browse/trunk/moz667/pipa-2.sh
+# 
 # TODO: Fusionar con pipa.sh
 # TODO: Spoof mac adress aleatorio en las funciones de modo station modo monitor
 # 
@@ -42,9 +44,9 @@ function IfaceStaMode () {
 function IfaceMonMode () {
 	if [ "$1" == "" ]
 	then
-		$CHANAUX=1
+		CHANAUX=1
 	else
-		$CHANAUX=$1
+		CHANAUX=$1
 	fi
 
 	echo -n "Poniendo la interfaz en modo monitor "
@@ -67,9 +69,9 @@ function IfaceMonMode () {
 function IfaceChannelChange () {
 	# hay alguna veces (con aireplay lo he comprobado) que se queda pillado en un canal
 	# y que no cambia con iwconfig channel a no ser que hagas down antes de la interfaz
-	ifconfig ath1 down
-	iwconfig ath1 channel $1
-	ifconfig ath1 up
+	ifconfig $1 down
+	iwconfig $1 channel $2
+	ifconfig $1 up
 }
 
 function echb() {
@@ -137,7 +139,7 @@ then
 	
 	for CHANNEL_AUX in $CHANNEL_LIST
 	do
-		IfaceChannelChange $CHANNEL_AUX
+		IfaceChannelChange ath1 $CHANNEL_AUX
 		
 		echo "PROBANDO CANAL : $CHANNEL_AUX"
 		echo "===================================================================="
@@ -175,7 +177,7 @@ echo -n "Escaneando y guardando config :"
 CHANNEL_AUX=1
 for CHANNEL_AUX in $CHANNEL_LIST
 do
-	IfaceChannelChange $CHANNEL_AUX
+	IfaceChannelChange ath0 $CHANNEL_AUX
 	
 	echo; echo -n "[channel $CHANNEL_AUX] "
 	
@@ -278,7 +280,7 @@ do
 	echo "==============================================================================="
 	echo "   Pulsa Ctrl+C para salir"
 	
-	IfaceChannelChange $CHANNEL_AUX
+	IfaceChannelChange ath1 $CHANNEL_AUX
 	
 	echo; echo "Probando asociacion : "
 	aireplay-ng -1 0 -e "$ESSID" -a $BSSID -h $MAC_ADDRESS ath1
