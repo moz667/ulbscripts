@@ -1,13 +1,16 @@
 # !/bin/bash
-# Host 192.168.84.1 appears to be up.
-# Host 192.168.84.254 appears to be up.
+# TODO: Fusionar con pipa.sh
+# TODO: Encabezado
+# TODO: Spoof mac adress aleatorio en las funciones de modo station modo monitor
+# PIPA, Peta Inalambricas Para Atheros, pretende algun dia ser un script para ayudarme 
+# a testear la seguridad de las redes inalambricas de mis vecinos :P 
 
 if [ "$1" == "help" ]
 then
 	echo "pipa.sh [comando]"
 	echo "Si lo llamas sin comando escaneara y generara la config para los distintos "
-	echo "gentoo-config : Genera la configuracion para gentoo, tienes que ejecutarlo desde una carpeta que ya hayas conseguido la password del ap, "
-	# TODO : TERMINAR
+	echo "gentoo-config : Genera la configuracion para gentoo, tienes que ejecutarlo desde una carpeta que ya hayas conseguido la password del ap, ....."
+	# TODO : Terminar ayuda
 	exit
 fi
 
@@ -21,18 +24,23 @@ then
 	exit
 fi
 
+# TODO : Hacer debian/ubuntu config
+
 if [ "$1" == "reset-iface" ]
 then
+	# TODO : Meter en funcion
 	airmon-ng stop ath1
 	airmon-ng stop ath0
 	wlanconfig ath create wlandev wifi0 wlanmode sta
 	iwconfig ath0 channel 1
 	ifconfig ath0 up
+	# TODO : Meter en funcion
 	exit
 fi
 
 if [ "$1" == "test-injection" ]
 then
+	# TODO : Meter en funcion	
 	airmon-ng stop ath1
 	airmon-ng stop ath0
 	wlanconfig ath create wlandev wifi0 wlanmode sta
@@ -40,6 +48,7 @@ then
 	ifconfig ath0 up
 	airmon-ng start wifi0 1
 	airmon-ng stop ath0
+	# TODO : Meter en funcion
 	
 	CHANNEL_LIST=`iwlist ath1 channel | grep "Channel.*:" | sed -e "s/.*Channel //g" -e "s/ .*//g" -e "s/^0//g"`
 	
@@ -55,6 +64,8 @@ then
 	done
 	exit
 fi
+
+# TODO : Comando probar config
 
 if [ "$1" == "search-ip" ]
 then
@@ -72,6 +83,8 @@ then
 	exit
 fi
 
+# TODO : Hacer un command not found que saque la ayuda
+
 MAC_ADDRESS=`ifconfig ath0 | grep HWaddr | sed -e "s/.*HWaddr //g" -e "s/ .*//g"`
 
 CHANNEL_LIST=`iwlist ath0 channel | grep "Channel.*:" | sed -e "s/.*Channel //g" -e "s/ .*//g" -e "s/^0//g"`
@@ -79,8 +92,8 @@ CHANNEL_LIST=`iwlist ath0 channel | grep "Channel.*:" | sed -e "s/.*Channel //g"
 echo -n "Escaneando y guardando config :"
 
 CHANNEL_AUX=1
-# for CHANNEL_AUX in $CHANNEL_LIST
-# do
+for CHANNEL_AUX in $CHANNEL_LIST
+do
 	# hay alguna veces (con aireplay lo he comprobado) que se queda pillado en un canal
 	# y que no cambia con iwconfig channel a no ser que hagas down antes de la interfaz
 	ifconfig ath0 down; iwconfig ath0 channel $CHANNEL_AUX; ifconfig ath0 up;
@@ -158,9 +171,8 @@ CHANNEL_AUX=1
 		echo "# N999) Para una version abreviada de este documento sin los comentarios ejecutar :" >> "$DIRWIFI/ayuda.txt"
 		echo "grep -v \"#\" ayuda.txt" >> "$DIRWIFI/ayuda.txt"
 	done
-# done
-echo ""
-
+done
+echo
 
 echo "Quieres testear uno a uno los distintos aps encontrados? (S/n) :"
 read res
@@ -170,7 +182,8 @@ then
 	exit 0
 fi
 
-echo -n " * Poniendo la interfaz en modo monitor "
+# TODO : Meter en funcion
+echo -n "Poniendo la interfaz en modo monitor "
 airmon-ng stop ath1 > /dev/null
 echo -n "."
 airmon-ng stop ath0 > /dev/null
@@ -185,6 +198,7 @@ airmon-ng start wifi0 1 > /dev/null
 echo -n "."
 airmon-ng stop ath0 > /dev/null
 echo "."
+# TODO : Meter en funcion
 
 # El for in separa por espacio o retorno de carro, por ello quitamos los espacios en blanco
 # sustituyendolos por #
@@ -207,6 +221,7 @@ do
 	aireplay-ng -9 -a $BSSID ath1
 done
 
+# TODO : Meter en funcion
 echo -n " * Poniendo la interfaz en modo station "
 airmon-ng stop ath1 > /dev/null
 echo -n "."
@@ -218,4 +233,6 @@ iwconfig ath0 channel 1 > /dev/null
 echo -n "."
 ifconfig ath0 up > /dev/null
 echo "."
+# TODO : Meter en funcion
+
 echo "Terminado!!!"
