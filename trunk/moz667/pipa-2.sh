@@ -2,15 +2,91 @@
 # TODO: Fusionar con pipa.sh
 # TODO: Encabezado
 # TODO: Spoof mac adress aleatorio en las funciones de modo station modo monitor
-# PIPA, Peta Inalambricas Para Atheros, pretende algun dia ser un script para ayudarme 
-# a testear la seguridad de las redes inalambricas de mis vecinos :P 
+# 
+# PIPA, Peta Inalambricas Para Atheros, pretende algun dia ser un script para ayudar
+# a testear la seguridad de las redes inalambricas de tus vecinos...
+# 
+# por moz667 <moz667@gmail.com>
+
+function IfaceStaMode () {
+	echo -n "Poniendo la interfaz en modo station "
+	airmon-ng stop ath1 > /dev/null
+	echo -n "."
+	airmon-ng stop ath0 > /dev/null
+	echo -n "."
+	wlanconfig ath create wlandev wifi0 wlanmode sta > /dev/null
+	echo -n "."
+	iwconfig ath0 channel 1 > /dev/null
+	echo -n "."
+	ifconfig ath0 up > /dev/null
+	echo "."
+}
+
+function IfaceMonMode () {
+	if [ "$1" == "" ]
+	then
+		$CHANAUX=1
+	else
+		$CHANAUX=$1
+	fi
+
+	echo -n "Poniendo la interfaz en modo monitor "
+	airmon-ng stop ath1 > /dev/null
+	echo -n "."
+	airmon-ng stop ath0 > /dev/null
+	echo -n "."
+	wlanconfig ath create wlandev wifi0 wlanmode sta > /dev/null
+	echo -n "."
+	iwconfig ath0 channel $CHANAUX > /dev/null
+	echo -n "."
+	ifconfig ath0 up > /dev/null
+	echo -n "."
+	airmon-ng start wifi0 1 > /dev/null
+	echo -n "."
+	airmon-ng stop ath0 > /dev/null
+	echo "."
+}
+
+function IfaceChannelChange () {
+	# hay alguna veces (con aireplay lo he comprobado) que se queda pillado en un canal
+	# y que no cambia con iwconfig channel a no ser que hagas down antes de la interfaz
+	ifconfig ath1 down
+	iwconfig ath1 channel $1
+	ifconfig ath1 up
+}
+
+function echb() {
+	tput bold
+	echo $*
+	tput sgr0
+}
 
 if [ "$1" == "help" ]
 then
-	echo "pipa.sh [comando]"
-	echo "Si lo llamas sin comando escaneara y generara la config para los distintos "
-	echo "gentoo-config : Genera la configuracion para gentoo, tienes que ejecutarlo desde una carpeta que ya hayas conseguido la password del ap, ....."
-	# TODO : Terminar ayuda
+	echo "PIPA, Peta Inalambricas Para Atheros, pretende algun dia ser un script "
+	echo "para ayudar a testear la seguridad de las redes inalambricas de tus "
+	echo "vecinos..."
+	echo
+	echb "Forma de uso"
+	echo "  pipa-2.sh [comando]"
+	echo
+	echo "  PIPA ejecutandolo sin pasarle un commando te buscara putos de acceso "
+	echo "  protegidos con WEP y generara directorios, a partir del sitio desde donde lo "
+	echo "  ejcutas, con los nombres de los essid y direcciones mac de los distintos. "
+	echo "  Ademas metera un archivo con una mini ayuda (ayud.txt) dentro de cada uno de "
+	echo "  estos directorios"
+	echo
+	echb "Commandos"
+	echo "  help           : Saca esta ayuda ;o)"
+	echo "  gentoo-config  : Genera la configuracion para gentoo"
+	echo "  debian-config  : Genera la configuracion para debian (debian, ubuntu y "
+	echo "                   sucedaneos ...)"
+	echo "  reset-iface    : Borra las interfaces ath1 y ath0 y crea una nueva en modo "
+	echo "                   station (como volver a empezar)"
+	echo "  test-injection : Testea la inyeccion de paquetes en distintos canales y "
+	echo "                   distintos aps que encuentre"
+	echo "  search-ip      : Busca equipos arriba con nmap (para los puntos de acceso que "
+	echo "                   no tengan dhcp, tarda un buen rato... no desesperes)"
 	exit
 fi
 
@@ -24,39 +100,27 @@ then
 	exit
 fi
 
-# TODO : Hacer debian/ubuntu config
-
+if [ "$1" == "debian-config" ]
+then
+	source variables.sh
+	# TODO : Hacer debian/ubuntu config
+	
+fi
 if [ "$1" == "reset-iface" ]
 then
-	# TODO : Meter en funcion
-	airmon-ng stop ath1
-	airmon-ng stop ath0
-	wlanconfig ath create wlandev wifi0 wlanmode sta
-	iwconfig ath0 channel 1
-	ifconfig ath0 up
-	# TODO : Meter en funcion
+	IfaceStaMode
 	exit
 fi
 
 if [ "$1" == "test-injection" ]
 then
-	# TODO : Meter en funcion	
-	airmon-ng stop ath1
-	airmon-ng stop ath0
-	wlanconfig ath create wlandev wifi0 wlanmode sta
-	iwconfig ath0 channel 1
-	ifconfig ath0 up
-	airmon-ng start wifi0 1
-	airmon-ng stop ath0
-	# TODO : Meter en funcion
+	IfaceMonMode
 	
 	CHANNEL_LIST=`iwlist ath1 channel | grep "Channel.*:" | sed -e "s/.*Channel //g" -e "s/ .*//g" -e "s/^0//g"`
 	
 	for CHANNEL_AUX in $CHANNEL_LIST
 	do
-		# hay alguna veces (con aireplay lo he comprobado) que se queda pillado en un canal
-		# y que no cambia con iwconfig channel a no ser que hagas down antes de la interfaz
-		ifconfig ath1 down; iwconfig ath1 channel $CHANNEL_AUX; ifconfig ath1 up;
+		IfaceChannelChange $CHANNEL_AUX
 		
 		echo "PROBANDO CANAL : $CHANNEL_AUX"
 		echo "===================================================================="
@@ -94,11 +158,9 @@ echo -n "Escaneando y guardando config :"
 CHANNEL_AUX=1
 for CHANNEL_AUX in $CHANNEL_LIST
 do
-	# hay alguna veces (con aireplay lo he comprobado) que se queda pillado en un canal
-	# y que no cambia con iwconfig channel a no ser que hagas down antes de la interfaz
-	ifconfig ath0 down; iwconfig ath0 channel $CHANNEL_AUX; ifconfig ath0 up;
-	echo ""
-	echo -n "[channel $CHANNEL_AUX] "
+	IfaceChannelChange $CHANNEL_AUX
+	
+	echo; echo -n "[channel $CHANNEL_AUX] "
 	
 	IWLIST_DATA=`iwlist ath0 scan | grep "Address\|ESSID\|Channel\|WPA\|Mode\|Encryption" | tr "\n" " " | sed -e "s/Cell/\nCell/g" | grep "Mode:Master" | grep "Encryption key:on" | sed -e "s/Mode:Master//g" -e "s/Encryption key:on//g" | sed -e "s/Frequency:2.....GHz//p" | sort | uniq | sed -e "s/ESSID/ ESSID/g" | sed -e "s/Cell...//g" | grep -v WPA | sed -e "s/(/ /g" -e "s/)/ /g" -e "s/Channel/Channel:/g" | sed -e "s/^ - //g" -e "s/ *ESSID/ ESSID/g" -e "s/\" *Channel: /\" Channel:/g" -e "s/Address: /Address:/g"`
 	IWLIST_DATA=`echo $IWLIST_DATA | sed -e "s/Address/\nAddress/g"`
@@ -174,7 +236,7 @@ do
 done
 echo
 
-echo "Quieres testear uno a uno los distintos aps encontrados? (S/n) :"
+echo "Quieres testear uno a uno los distintos puntos de acceso encontrados? (S/n) :"
 read res
 
 if [ "$res" == "n" ]
@@ -182,23 +244,7 @@ then
 	exit 0
 fi
 
-# TODO : Meter en funcion
-echo -n "Poniendo la interfaz en modo monitor "
-airmon-ng stop ath1 > /dev/null
-echo -n "."
-airmon-ng stop ath0 > /dev/null
-echo -n "."
-wlanconfig ath create wlandev wifi0 wlanmode sta > /dev/null
-echo -n "."
-iwconfig ath0 channel 1 > /dev/null
-echo -n "."
-ifconfig ath0 up > /dev/null
-echo -n "."
-airmon-ng start wifi0 1 > /dev/null
-echo -n "."
-airmon-ng stop ath0 > /dev/null
-echo "."
-# TODO : Meter en funcion
+IfaceMonMode
 
 # El for in separa por espacio o retorno de carro, por ello quitamos los espacios en blanco
 # sustituyendolos por #
@@ -214,25 +260,16 @@ do
 	echo " * Probando :: $BSSID [$ESSID]"
 	echo "==============================================================================="
 	echo "   Pulsa Ctrl+C para salir"
-	ifconfig ath1 down; iwconfig ath1 channel $CHANNEL; ifconfig ath1 up;
+	
+	IfaceChannelChange $CHANNEL_AUX
+	
 	echo; echo "Probando asociacion : "
 	aireplay-ng -1 0 -e "$ESSID" -a $BSSID -h $MAC_ADDRESS ath1
+	
 	echo; echo "Probando inyeccion : "
 	aireplay-ng -9 -a $BSSID ath1
 done
 
-# TODO : Meter en funcion
-echo -n " * Poniendo la interfaz en modo station "
-airmon-ng stop ath1 > /dev/null
-echo -n "."
-airmon-ng stop ath0 > /dev/null
-echo -n "."
-wlanconfig ath create wlandev wifi0 wlanmode sta > /dev/null
-echo -n "."
-iwconfig ath0 channel 1 > /dev/null
-echo -n "."
-ifconfig ath0 up > /dev/null
-echo "."
-# TODO : Meter en funcion
+IfaceStaMode
 
 echo "Terminado!!!"
