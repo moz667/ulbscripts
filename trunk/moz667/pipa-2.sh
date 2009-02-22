@@ -78,13 +78,14 @@ CHANNEL_LIST=`iwlist ath0 channel | grep "Channel.*:" | sed -e "s/.*Channel //g"
 
 echo -n "Escaneando y guardando config :"
 
-for CHANNEL_AUX in $CHANNEL_LIST
-do
+CHANNEL_AUX=1
+# for CHANNEL_AUX in $CHANNEL_LIST
+# do
 	# hay alguna veces (con aireplay lo he comprobado) que se queda pillado en un canal
 	# y que no cambia con iwconfig channel a no ser que hagas down antes de la interfaz
 	ifconfig ath0 down; iwconfig ath0 channel $CHANNEL_AUX; ifconfig ath0 up;
-
-	echo -n "[chn $CHANNEL_AUX]"
+	echo ""
+	echo -n "[channel $CHANNEL_AUX] "
 	
 	IWLIST_DATA=`iwlist ath0 scan | grep "Address\|ESSID\|Channel\|WPA\|Mode\|Encryption" | tr "\n" " " | sed -e "s/Cell/\nCell/g" | grep "Mode:Master" | grep "Encryption key:on" | sed -e "s/Mode:Master//g" -e "s/Encryption key:on//g" | sed -e "s/Frequency:2.....GHz//p" | sort | uniq | sed -e "s/ESSID/ ESSID/g" | sed -e "s/Cell...//g" | grep -v WPA | sed -e "s/(/ /g" -e "s/)/ /g" -e "s/Channel/Channel:/g" | sed -e "s/^ - //g" -e "s/ *ESSID/ ESSID/g" -e "s/\" *Channel: /\" Channel:/g" -e "s/Address: /Address:/g"`
 	IWLIST_DATA=`echo $IWLIST_DATA | sed -e "s/Address/\nAddress/g"`
@@ -98,7 +99,7 @@ do
 		ESSID=`echo $ESSID_CFG | sed -e "s/.*ESSID:\"//g" -e "s/\".*//g"`
 		CHANNEL=`echo $ESSID_CFG | sed -e "s/.*Channel://g" -e "s/ //g"`
 
-		IWLIST_DATA_AUX="$IWLIST_DATA_AUX\n$CHANNEL [$ESSID] $BSSID"
+		IWLIST_DATA_AUX="$IWLIST_DATA_AUX$CHANNEL#$BSSID#[$ESSID]\n"
 
 		echo -n "."
 
@@ -157,8 +158,64 @@ do
 		echo "# N999) Para una version abreviada de este documento sin los comentarios ejecutar :" >> "$DIRWIFI/ayuda.txt"
 		echo "grep -v \"#\" ayuda.txt" >> "$DIRWIFI/ayuda.txt"
 	done
+# done
+echo ""
+
+
+echo "Quieres testear uno a uno los distintos aps encontrados? (S/n) :"
+read res
+
+if [ "$res" == "n" ]
+then
+	exit 0
+fi
+
+echo -n " * Poniendo la interfaz en modo monitor "
+airmon-ng stop ath1 > /dev/null
+echo -n "."
+airmon-ng stop ath0 > /dev/null
+echo -n "."
+wlanconfig ath create wlandev wifi0 wlanmode sta > /dev/null
+echo -n "."
+iwconfig ath0 channel 1 > /dev/null
+echo -n "."
+ifconfig ath0 up > /dev/null
+echo -n "."
+airmon-ng start wifi0 1 > /dev/null
+echo -n "."
+airmon-ng stop ath0 > /dev/null
+echo "."
+
+# El for in separa por espacio o retorno de carro, por ello quitamos los espacios en blanco
+# sustituyendolos por #
+IWLIST_DATA_AUX=`echo $IWLIST_DATA_AUX | tr " " "#" | sort | uniq`
+
+for ESSID_CFG in `echo -e $IWLIST_DATA_AUX`
+do
+	BSSID=`echo $ESSID_CFG | sed -e "s/#/ /g" -e "s/ \[.*//g" -e "s/.* //g"`
+ 	ESSID=`echo $ESSID_CFG | sed -e "s/#/ /g" -e "s/.*\[//g" -e "s/\].*//g"`
+ 	CHANNEL=`echo $ESSID_CFG | sed -e "s/#/ /g" -e "s/ .*//g"`
+
+	echo "==============================================================================="
+	echo " * Probando :: $BSSID [$ESSID]"
+	echo "==============================================================================="
+	echo "   Pulsa Ctrl+C para salir"
+	ifconfig ath1 down; iwconfig ath1 channel $CHANNEL; ifconfig ath1 up;
+	echo; echo "Probando asociacion : "
+	aireplay-ng -1 0 -e "$ESSID" -a $BSSID -h $MAC_ADDRESS ath1
+	echo; echo "Probando inyeccion : "
+	aireplay-ng -9 -a $BSSID ath1
 done
-echo -e "\n"
 
-echo -e "$IWLIST_DATA_AUX" | sort | uniq
-
+echo -n " * Poniendo la interfaz en modo station "
+airmon-ng stop ath1 > /dev/null
+echo -n "."
+airmon-ng stop ath0 > /dev/null
+echo -n "."
+wlanconfig ath create wlandev wifi0 wlanmode sta > /dev/null
+echo -n "."
+iwconfig ath0 channel 1 > /dev/null
+echo -n "."
+ifconfig ath0 up > /dev/null
+echo "."
+echo "Terminado!!!"
