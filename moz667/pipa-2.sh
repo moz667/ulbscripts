@@ -280,7 +280,7 @@ do
 	echo "==============================================================================="
 	echo "   Pulsa Ctrl+C para salir"
 	
-	IfaceChannelChange ath1 $CHANNEL_AUX
+	IfaceChannelChange ath1 $CHANNEL
 	
 	echo; echo "Probando asociacion : "
 	aireplay-ng -1 0 -e "$ESSID" -a $BSSID -h $MAC_ADDRESS ath1
