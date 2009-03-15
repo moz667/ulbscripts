@@ -28,6 +28,7 @@
 # 
 
 function IfaceStaMode () {
+	# TODO: No poner en modo sta si ya esta en modo sta
 	echo -n "Poniendo la interfaz en modo station "
 	airmon-ng stop ath1 > /dev/null
 	echo -n "."
@@ -42,6 +43,7 @@ function IfaceStaMode () {
 }
 
 function IfaceMonMode () {
+	# TODO: No poner en modo mon si ya esta en modo mon, mirar el $CHANAUX por si ha cambiado
 	if [ "$1" == "" ]
 	then
 		CHANAUX=1
@@ -167,6 +169,8 @@ then
 fi
 
 # TODO : Hacer un command not found que saque la ayuda
+
+IfaceStaMode
 
 MAC_ADDRESS=`ifconfig wifi0 | grep HWaddr | sed -e "s/.*HWaddr //g" -e "s/ .*//g" -e "s/-00-00-00-00-00-00-00-00-00-00//g" -e "s/-/:/g"`
 
