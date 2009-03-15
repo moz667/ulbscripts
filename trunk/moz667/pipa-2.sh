@@ -168,7 +168,7 @@ fi
 
 # TODO : Hacer un command not found que saque la ayuda
 
-MAC_ADDRESS=`ifconfig ath0 | grep HWaddr | sed -e "s/.*HWaddr //g" -e "s/ .*//g"`
+MAC_ADDRESS=`ifconfig wifi0 | grep HWaddr | sed -e "s/.*HWaddr //g" -e "s/ .*//g" -e "s/-00-00-00-00-00-00-00-00-00-00//g" -e "s/-/:/g"`
 
 CHANNEL_LIST=`iwlist ath0 channel | grep "Channel.*:" | sed -e "s/.*Channel //g" -e "s/ .*//g" -e "s/^0//g"`
 
