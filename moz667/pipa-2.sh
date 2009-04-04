@@ -71,6 +71,7 @@ function IfaceMonMode () {
 function IfaceChannelChange () {
 	# hay alguna veces (con aireplay lo he comprobado) que se queda pillado en un canal
 	# y que no cambia con iwconfig channel a no ser que hagas down antes de la interfaz
+	# TODO: Para los modo station no funciona... hace un auto cambiado de channel
 	ifconfig $1 down
 	iwconfig $1 channel $2
 	ifconfig $1 up
@@ -104,6 +105,8 @@ then
 	echo "                   sucedaneos ...)"
 	echo "  reset-iface    : Borra las interfaces ath1 y ath0 y crea una nueva en modo "
 	echo "                   station (como volver a empezar)"
+	echo "  iface-mon      : Borra las interfaces ath1 y ath0 y crea una nueva en modo "
+	echo "                   monitor"
 	echo "  test-injection : Testea la inyeccion de paquetes en distintos canales y "
 	echo "                   distintos aps que encuentre"
 	echo "  search-ip      : Busca equipos arriba con nmap (para los puntos de acceso que "
@@ -127,9 +130,16 @@ then
 	# TODO : Hacer debian/ubuntu config
 	
 fi
+
 if [ "$1" == "reset-iface" ]
 then
 	IfaceStaMode
+	exit
+fi
+
+if [ "$1" == "iface-mon" ]
+then
+	IfaceMonMode
 	exit
 fi
 
