@@ -28,44 +28,67 @@
 # 
 
 function IfaceStaMode () {
-	# TODO: No poner en modo sta si ya esta en modo sta
 	echo -n "Poniendo la interfaz en modo station "
-	airmon-ng stop ath1 > /dev/null
+	AUXDEV=`ifconfig | grep ath1`
+	if [ "$AUXDEV" != "" ]
+	then 
+		airmon-ng stop ath1 > /dev/null
+	fi
 	echo -n "."
-	airmon-ng stop ath0 > /dev/null
-	echo -n "."
-	wlanconfig ath create wlandev wifi0 wlanmode sta > /dev/null
-	echo -n "."
-	iwconfig ath0 channel 1 > /dev/null
-	echo -n "."
-	ifconfig ath0 up > /dev/null
-	echo "."
+	AUXDEV=`ifconfig | grep ath0`
+	if [ "$AUXDEV" != "" ]
+	then
+		AUXDEV=`iwconfig ath0 | grep Mode:Managed`
+		if [ "$AUXDEV" == "" ]
+		then
+			airmon-ng stop ath0 > /dev/null
+			echo -n "."
+			wlanconfig ath create wlandev wifi0 wlanmode sta > /dev/null
+			echo -n "."
+			ifconfig ath0 up > /dev/null
+			echo "."
+		else
+			echo "...."
+		fi
+	else
+		echo -n "."
+		wlanconfig ath create wlandev wifi0 wlanmode sta > /dev/null
+		echo -n "."
+		ifconfig ath0 up > /dev/null
+		echo "."
+	fi
 }
 
 function IfaceMonMode () {
-	# TODO: No poner en modo mon si ya esta en modo mon, mirar el $CHANAUX por si ha cambiado
 	if [ "$1" == "" ]
 	then
 		CHANAUX=1
 	else
 		CHANAUX=$1
 	fi
-
 	echo -n "Poniendo la interfaz en modo monitor "
-	airmon-ng stop ath1 > /dev/null
-	echo -n "."
-	airmon-ng stop ath0 > /dev/null
-	echo -n "."
-	wlanconfig ath create wlandev wifi0 wlanmode sta > /dev/null
-	echo -n "."
-	iwconfig ath0 channel $CHANAUX > /dev/null
-	echo -n "."
-	ifconfig ath0 up > /dev/null
-	echo -n "."
-	airmon-ng start wifi0 1 > /dev/null
-	echo -n "."
-	airmon-ng stop ath0 > /dev/null
-	echo "."
+	AUXDEV=`iwconfig ath1 | grep Mode:Monitor`
+	if [ "$AUXDEV" == "" ]
+	then
+		airmon-ng stop ath0 > /dev/null
+		echo -n "."
+		airmon-ng stop ath1 > /dev/null
+		echo -n "."
+		wlanconfig ath create wlandev wifi0 wlanmode sta > /dev/null
+		echo -n "."
+		ifconfig ath0 up > /dev/null
+		echo -n "."
+		airmon-ng start wifi0 $CHANAUX > /dev/null
+		echo -n "."
+		airmon-ng stop ath0 > /dev/null
+		echo -n "."
+		ifconfig ath1 down > /dev/null
+		echo "."
+		ifconfig ath1 up > /dev/null
+	else
+		IfaceChannelChange $CHANAUX
+		echo "......."
+	fi
 }
 
 function IfaceChannelChange () {
@@ -107,6 +130,8 @@ then
 	echo "                   station (como volver a empezar)"
 	echo "  iface-mon      : Borra las interfaces ath1 y ath0 y crea una nueva en modo "
 	echo "                   monitor"
+	echo "  capture [ch]   : Captura global filtrando wep en capture.cap en el dir que "
+	echo "                   se ejecuta. Puedes especificarle un canal para filtrarlo mas "
 	echo "  test-injection : Testea la inyeccion de paquetes en distintos canales y "
 	echo "                   distintos aps que encuentre"
 	echo "  search-ip      : Busca equipos arriba con nmap (para los puntos de acceso que "
@@ -123,6 +148,18 @@ then
 	echo "config_ath0=( \"dhcp\" )"
 	exit
 fi
+
+if [ "$1" == "mon-mode" ]
+then
+	IfaceMonMode $2
+	AUXAIRO=""
+	if [ $2 != "" ]
+	then
+		AUXAIRO="-c $2"
+	fi
+	airodump-ng --encrypt WEP $AUXAIRO -w capture ath1
+	exit
+fi	
 
 if [ "$1" == "debian-config" ]
 then
