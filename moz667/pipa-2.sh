@@ -130,7 +130,7 @@ then
 	echo "                   station (como volver a empezar)"
 	echo "  iface-mon      : Borra las interfaces ath1 y ath0 y crea una nueva en modo "
 	echo "                   monitor"
-	echo "  capture [ch]   : Captura global filtrando wep en capture.cap en el dir que "
+	echo "  mon-mode [ch]  : Captura global filtrando wep en capture.cap en el dir que "
 	echo "                   se ejecuta. Puedes especificarle un canal para filtrarlo mas "
 	echo "  test-injection : Testea la inyeccion de paquetes en distintos canales y "
 	echo "                   distintos aps que encuentre"
