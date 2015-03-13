@@ -1,0 +1,1 @@
+Harto ya de copiar de una a otra maquina los scripts que voy haciendo voy a crear este repositorio para tenerlos online y que pueda modificar a mi antojo y poder tener asi una pronta recuperacion de los mismos.
